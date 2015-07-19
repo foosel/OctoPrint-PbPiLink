@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_pbpilink/static *
+recursive-include octoprint_pbpilink/templates *
+recursive-include octoprint_pbpilink/translations *
