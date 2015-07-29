@@ -3,6 +3,7 @@ $(function() {
         var self = this;
 
         self.loginState = parameters[0];
+        self.printerState = parameters[1];
 
         self.powerState = ko.observable();
 
@@ -32,7 +33,15 @@ $(function() {
             if (!self.powerButtonEnabled()) return;
 
             if (self.powerState() == "on") {
-                self._sendCommand("power_off");
+                var powerOff = function() {
+                    self._sendCommand("power_off");
+                };
+
+                if (self.printerState.isPrinting()) {
+                    showConfirmationDialog(gettext("This will power off your printer. Since you are currently printing, this will effectively cancel your print job."), powerOff);
+                } else {
+                    powerOff();
+                }
             } else if (self.powerState() == "off") {
                 self._sendCommand("power_on");
             }
@@ -71,5 +80,9 @@ $(function() {
     }
 
     // view model class, parameters for constructor, container to bind to
-    ADDITIONAL_VIEWMODELS.push([PbPiLinkViewModel, ["loginStateViewModel"], ["#navbar_plugin_pbpilink"]]);
+    ADDITIONAL_VIEWMODELS.push([
+        PbPiLinkViewModel,
+        ["loginStateViewModel", "printerStateViewModel"],
+        ["#navbar_plugin_pbpilink"]
+    ]);
 });
