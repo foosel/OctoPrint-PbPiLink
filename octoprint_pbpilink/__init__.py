@@ -87,10 +87,11 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 		if command == "power_on":
 			self._set_pb_power(True)
 
-			# we send a fake acknowledgement here to get the communication to
+			# we send a double fake ack here to get the communication to
 			# the printer restarted after a power off - we don't detect a
 			# serial disconnect in that case, so we don't have to reconnect
 			# but we need to get things going again
+			self._printer.fake_ack()
 			self._printer.fake_ack()
 
 		elif command == "power_off":
