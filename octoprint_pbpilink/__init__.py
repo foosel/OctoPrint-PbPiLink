@@ -18,6 +18,25 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 			power_off_shutdown=True
 		)
 
+	##~~ Softwareupdate hook
+
+	def get_update_information(self):
+		return dict(
+			requestspinner=dict(
+				displayName="Printrbot Pi Link Plugin",
+				displayVersion=self._plugin_version,
+
+				# version check: github repository
+				type="github_release",
+				user="foosel",
+				repo="OctoPrint-PbPiLink",
+				current=self._plugin_version,
+
+				# update method: pip
+				pip="https://github.com/foosel/OctoPrint-PbPiLink/archive/{target_version}.zip"
+			)
+		)
+
 	##~~ Assets
 
 	def get_assets(self):
