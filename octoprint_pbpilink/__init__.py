@@ -26,8 +26,11 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 		return dict(
 			power_on_startup=True,
 			power_off_shutdown=True,
+
+			power_on_clients=False,
 			power_off_noclients=False,
 			noclients_countdown=60,
+
 			power_on_connect=True,
 			power_off_disconnect=True
 		)
@@ -125,6 +128,8 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 
 		if event in self.__class__.EVENTS_NOCLIENTS:
 			if event == Events.CLIENT_OPENED:
+				if self._clients == 0 and self._settings.get_boolean(["power_on_clients"]):
+					self._poweron()
 				self._clients += 1
 				self._client_poweroff_timer.cancel()
 			elif event == Events.CLIENT_CLOSED:
