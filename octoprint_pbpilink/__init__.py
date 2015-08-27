@@ -2,21 +2,43 @@
 from __future__ import absolute_import
 
 import octoprint.plugin
+import threading
+from octoprint.events import Events
 
 class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
                      octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.StartupPlugin,
                      octoprint.plugin.ShutdownPlugin,
                      octoprint.plugin.SimpleApiPlugin,
-                     octoprint.plugin.AssetPlugin):
+                     octoprint.plugin.AssetPlugin,
+                     octoprint.plugin.EventHandlerPlugin):
+
+	EVENTS_NOCLIENTS = (Events.CLIENT_OPENED, Events.CLIENT_CLOSED, Events.PRINT_DONE)
+	EVENTS_DISCONNECT = (Events.DISCONNECTED,)
+
+	def __init__(self):
+		self._connection_data = None
+		self._clients = 0
 
 	##~~ Settings
 
 	def get_settings_defaults(self):
 		return dict(
 			power_on_startup=True,
-			power_off_shutdown=True
+			power_off_shutdown=True,
+			power_off_noclients=False,
+			noclients_countdown=60,
+			power_on_connect=True,
+			power_off_disconnect=True
 		)
+
+	def initialize(self):
+		if self._settings.get_boolean("power_on_connect"):
+			original_connect = self._printer.connect
+			def wrapped_connect(*args, **kwargs):
+				self._poweron(connect=False)
+				original_connect(*args, **kwargs)
+			self._printer.connect = wrapped_connect
 
 	##~~ Softwareupdate hook
 
@@ -85,24 +107,62 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 			abort(403)
 
 		if command == "power_on":
-			self._set_pb_power(True)
-
-			# we send a double fake ack here to get the communication to
-			# the printer restarted after a power off - we don't detect a
-			# serial disconnect in that case, so we don't have to reconnect
-			# but we need to get things going again
-			self._printer.fake_ack()
-			self._printer.fake_ack()
+			self._poweron()
 
 		elif command == "power_off":
-			self._set_pb_power(False)
+			self._poweroff()
 
 		return jsonify(**self._status())
 
 	def _status(self):
 		return dict(power=self._get_pb_power())
 
+	##~~ EventHandlerPlugin
+
+	def on_event(self, event, payload):
+		if not event in self.__class__.EVENTS_NOCLIENTS and not event in self.__class__.EVENTS_DISCONNECT:
+			return
+
+		if event in self.__class__.EVENTS_NOCLIENTS:
+			if event == Events.CLIENT_OPENED:
+				self._clients += 1
+				self._client_poweroff_timer.cancel()
+			elif event == Events.CLIENT_CLOSED:
+				self._clients -= 1
+
+			if self._clients <= 0:
+				self._clients = 0
+				self._client_poweroff_timer = threading.Timer(self._settings.get_float(["noclients_countdown"]), self._noclients_poweroff)
+				self._client_poweroff_timer.start()
+
+		elif event in self.__class__.EVENTS_DISCONNECT:
+			self._poweroff(disconnect=False)
+
 	##~~ Helpers
+
+	def _poweron(self, connect=True):
+		self._set_pb_power(True)
+		if connect and self._connection_data is not None:
+			state, port, baudrate, printer_profile = self._connection_data
+			if state != "Operational":
+				return
+			self._printer.connect(port=port, baudrate=baudrate, printer_profile=printer_profile)
+
+	def _poweroff(self, disconnect=True):
+		self._connection_data = self._printer.get_current_connection()
+		if disconnect:
+			self._printer.disconnect()
+		self._set_pb_power(False)
+
+	def _noclients_poweroff(self):
+		if self._printer.is_printing():
+			return
+
+		if not self._settings.get_boolean(["power_off_noclients"]):
+			return
+
+		self._logger.info("Powering off after not seeing any clients after {}s".format(self._settings.get_float(["noclients_countdown"])))
+		self._poweroff()
 
 	def _set_pb_power(self, enable):
 		import sarge
