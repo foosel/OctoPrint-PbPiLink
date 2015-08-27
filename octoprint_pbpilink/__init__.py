@@ -33,7 +33,7 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 		)
 
 	def initialize(self):
-		if self._settings.get_boolean("power_on_connect"):
+		if self._settings.get_boolean(["power_on_connect"]):
 			original_connect = self._printer.connect
 			def wrapped_connect(*args, **kwargs):
 				self._poweron(connect=False)
