@@ -19,6 +19,7 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 	def __init__(self):
 		self._connection_data = None
 		self._clients = 0
+		self._client_poweroff_timer = None
 
 	##~~ Settings
 
@@ -138,7 +139,7 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 				if self._clients == 0 and self._settings.get_boolean(["power_on_clients"]):
 					self._poweron()
 				self._clients += 1
-				self._client_poweroff_timer.cancel()
+
 			elif event == Events.CLIENT_CLOSED:
 				self._clients -= 1
 
@@ -146,6 +147,9 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 				self._clients = 0
 				self._client_poweroff_timer = threading.Timer(self._settings.get_float(["noclients_countdown"]), self._noclients_poweroff)
 				self._client_poweroff_timer.start()
+			elif self._client_poweroff_timer is not None:
+				self._client_poweroff_timer.cancel()
+				self._client_poweroff_timer = None
 
 		elif event in self.__class__.EVENTS_DISCONNECT:
 			self._poweroff(disconnect=False)
