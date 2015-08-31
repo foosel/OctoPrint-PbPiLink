@@ -80,6 +80,10 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 	##~~ Startup
 
 	def on_startup(self, host, port):
+		# setup GPIO
+		self._setup_gpio()
+
+		# setup serial port if necessary
 		import fnmatch
 		additional_ports = self._settings.global_get(["serial", "additionalPorts"])
 		if not any(map(lambda x: fnmatch.fnmatch("/dev/ttyAMA0", x), additional_ports)):
@@ -88,6 +92,7 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 			self._settings.global_set(["serial", "additionalPorts"], additional_ports)
 			self._settings.save()
 
+		# power on if configured as such
 		if self._settings.get_boolean(["power_on_startup"]):
 			self._set_pb_power(True)
 
@@ -210,6 +215,15 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 				return "on"
 
 		return "unknown"
+
+	def _setup_gpio(self):
+		import sarge
+		command = ["gpio", "-g", "mode", "2", "out"]
+
+		try:
+			sarge.run(command)
+		except:
+			self._logger.exception("{} failed".format(" ".join(command)))
 
 def __plugin_load__():
 	global __plugin_implementation__
