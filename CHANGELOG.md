@@ -1,4 +1,4 @@
-# OctoPrint Changelog
+# Printrboard Pi Link Plugin Changelog
 
 ## 0.1.2 (unreleased)
 
