@@ -22,7 +22,7 @@ class PbPiLinkPlugin(octoprint.plugin.TemplatePlugin,
 
 	def get_update_information(self):
 		return dict(
-			requestspinner=dict(
+			pbpilink=dict(
 				displayName="Printrbot Pi Link Plugin",
 				displayVersion=self._plugin_version,
 
