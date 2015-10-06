@@ -19,13 +19,8 @@ or manually using this URL:
 
     https://github.com/foosel/OctoPrint-PbPiLink/archive/master.zip
 
-You also need [WiringPi]() set up and add
-
-    gpio -g export 2 out
-    gpio -g mode 2 out
-
-to `/etc/rc.local` or `/etc/init.d/octoprint`, otherwise OctoPrint won't be able to manipulate
-the power switching GPIO pin.
+You also need [WiringPi](https://projects.drogon.net/raspberry-pi/wiringpi/download-and-install/)
+set up, otherwise OctoPrint won't be able to manipulate the power switching GPIO pin.
 
 Please refer to the [README of the Printrboard Pi Link repository](https://github.com/j-laird/Printrboard-Pi-Link#printrboard-pi-link).
 
@@ -41,11 +36,27 @@ plugins:
     # whether to power off the Printrboard on shutdown
     # of OctoPrint
     power_off_shutdown: true
+
+    # whether to power on the Printrboard when a client connects
+    # to the web interface
+    power_on_clients: false
+
+    # whether to power off the Printrboard when no clients are
+    # connected and no print is ongoing
+    power_off_noclients: false
+
+    # after how many seconds without any connected
+    # clients to power off the Printrboard
+    noclients_countdown: 60
+
+    # whether to power on the Printrboard before serial connect
+    power_on_connect: true
+
+    # whether to power off the Printrboard on serial disconnect
+    power_off_disconnect
 ```
 
 ## Future Improvements
 
-  * Make configuration settings configurable
-  * Automatically cut power on disconnect/error?
   * Serial port wrapper with custom "PbPiLink" name and auto connect
   * tbc
